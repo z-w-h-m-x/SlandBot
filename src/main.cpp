@@ -19,16 +19,16 @@
 
 #include <iostream>
 
-#include "SlackBot.h"
+#include "SlackBBot.h"
 #include "Processor/ProgramStop.h"
 
 #include "httplib.h"
 
-#ifdef _WIN32
-#include "windows.h"
-#elif __linux__
-#include "unistd.h"
-#endif
+// #ifdef _WIN32
+// #include "windows.h"
+// #elif __linux__
+// #include "unistd.h"
+// #endif
 
 #include "Data/Data.h"
 #include "Processor/CommandProcessor.h"
@@ -37,10 +37,13 @@
 #include "Network/ReportingServer/OneBot11.h"
 #include "Network/Client/NapCat.h"
 #include "Processor/MessageQueueProcessor.h"
+#include "Processor/TerminalProcessor.h"
 
 using namespace std;
 
 #undef main
+
+bool terminalRun;
 
 int main(int argc,char* argv[])
 {
@@ -51,7 +54,7 @@ int main(int argc,char* argv[])
     }
 
     //获取配置目录
-    perfPath = SDL_GetPrefPath("SlackBotDev","SlackBot");
+    perfPath = SDL_GetPrefPath("SlackBBotDev","SlackBBot");
     programPath = SDL_GetBasePath();
 
     //命令行
@@ -62,6 +65,9 @@ int main(int argc,char* argv[])
 
     cout<<ProjectName<<" "<<ProjectVersion<<endl
         <<"Built in "<<CMAKE_SYSTEM_NAME<<endl;
+    
+    //终端控制台启动
+    terminalRun = TerminalInit();
 
     if ( !LoadAllPlugin() )
     {
@@ -81,8 +87,16 @@ int main(int argc,char* argv[])
 
     SLB_MessageProcessorInit();
 
-    std::cout << "Press Enter to stop the server..." << std::endl;
-    std::cin.get();  // 等待用户按下回车键
+    if (!terminalRun)
+    {
+        std::cout << "Press Enter to stop the server..." << std::endl;
+        std::cin.get();  // 等待用户按下回车键
+    }
+    else
+    {
+        if(terminalMainThread.joinable())
+            terminalMainThread.join();
+    }
 
     Stop();
 }
@@ -92,6 +106,7 @@ void Stop()
     logger.Screen("wait server close");
     server->Stop();
     SLB_MessageProcessorStop();
+    TerminalStop();
     ProgramQuit();
 }
 

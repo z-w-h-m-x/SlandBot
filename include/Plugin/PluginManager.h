@@ -24,3 +24,4 @@ void* tryGetFunction(void*,const char*);
 //由插件init过程调用
 Function_Extern void RegisterFunction(int index,const char * name);
 Function_Extern void RegisterSpecialFunction(int index,const char * name,SpecialType type,int parm);
+Function_Extern void CallWorker(int index,WorkerType type,const char * argsInOne);

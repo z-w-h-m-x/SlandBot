@@ -45,7 +45,7 @@ slb会在启动的时候遍历插件文件夹并加载插件
 
 插件的SDK(CPP)已经提供在程序编译后目录下的 include/${ProjectName}/ 下
 
-当前版本ProjectName为SlackBot
+当前版本ProjectName为SlackBBot
 
 头文件中已定义导出，还有程序的API（在SDK中）
 

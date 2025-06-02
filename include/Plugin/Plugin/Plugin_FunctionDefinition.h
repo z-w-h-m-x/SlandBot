@@ -6,6 +6,11 @@ Message_Tirgger=1,
 Message_Normal=2
 };
 
+enum WorkerType
+{
+    CommandRegister = 1
+};
+
 //内部统计使用
 enum iFunctionType
 {

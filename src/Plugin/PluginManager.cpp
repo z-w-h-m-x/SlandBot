@@ -1,12 +1,17 @@
 #include "Plugin/PluginManager.h"
 
-#include "SlackBot.h"
+#include "SlackBBot.h"
 #include "Processor/ProgramStop.h"
 #include "Processor/MessageQueueProcessor.h"
+#include "Processor/TerminalProcessor.h"
+
+#include "FakeWorkers.h"
 
 #include <map>
 #include <filesystem>
 #include <regex>
+
+#include <mutex>
 
 using std::filesystem::directory_iterator;
 
@@ -14,12 +19,23 @@ std::vector<std::string> targetPath;//Dynamic library in folder of plugins.
 std::map<std::string,std::string> pluginPath;//<name,path>
 std::map<int,void*> plugins;//plugin index, handle
 
+std::mutex mutex_LoadPlugin;
+
 typedef const char * (*iPluginName)();
 typedef void (*iRF)(int,const char *);
 typedef void (*iRSF)(int,const char *, SpecialType, int);
 typedef void (*iSM)(MessageContent);
-typedef void (*iInit)(int,iRF,iRSF,iSM);
+typedef void (*iCW)(int, WorkerType, const char * );
+
+typedef void (*iInit)(int,iRF,iRSF,iSM,iCW);
 typedef void (*pInit)();
+
+typedef void (*callWorker_CallBack)(WorkerType,void*);
+
+extern bool terminalRun;
+
+//command
+// typedef void (*Terminal_RC_Handle)(slb::CommandFunc,const char *, const char *,int);
 
 //try to find floder in folder and wrtier path to "targetPath"
 void SearchPluginInFolder()
@@ -38,11 +54,12 @@ void SearchPluginInFolder()
 //尝试加载目录下所有插件
 bool LoadAllPlugin()
 {
+    std::unique_lock<std::mutex> lock(mutex_LoadPlugin);
     logger<<"Search Plugin...";
 
     SearchPluginInFolder();
 
-    int index = 0;
+    int index = plugins.size();
 
     for (std::string i : targetPath)
     {
@@ -71,7 +88,7 @@ bool LoadAllPlugin()
 
             plugins[index] = handle;
             pluginPath[getPluginName()] = i;
-            iiInit(index,RegisterFunction,RegisterSpecialFunction,SLB_SendMessage);
+            iiInit(index,RegisterFunction,RegisterSpecialFunction,SLB_SendMessage,CallWorker);
 
             std::ostringstream oss;
             oss <<"Load Plugin: " << getPluginName() << " from " << i;
@@ -88,10 +105,44 @@ bool LoadAllPlugin()
 }
 
 //尝试加载单个插件dll
-bool LoadPlugin(const char *)
+bool LoadPlugin(const char * path)
 {
-    logger<<"Loading a single plugin is not yet implemented.";
-    return false;
+    std::unique_lock<std::mutex> lock(mutex_LoadPlugin);
+
+    void* handle = SDL_LoadObject(path);
+    iPluginName getPluginName;
+    iInit iiInit;
+    pInit Init;
+    int index = plugins.size();
+    
+    if (handle == nullptr) {
+        logger.PrintError("Fail to load object: " + std::string(path));
+        SDL_UnloadObject(handle);
+    }
+    else {
+    try
+    {
+        getPluginName = (iPluginName)tryGetFunction(handle,"PluginName");
+        iiInit = (iInit)tryGetFunction(handle,"iInit");
+        Init = (pInit)tryGetFunction(handle,"Init");
+    }
+    catch(const char * e)
+    {
+        SDL_UnloadObject(handle);
+        logger.PrintError(e);
+    }
+    
+        plugins[index] = handle;
+        pluginPath[getPluginName()] = path;
+        iiInit(index,RegisterFunction,RegisterSpecialFunction,SLB_SendMessage,CallWorker);
+    
+        std::ostringstream oss;
+        oss <<"Load Plugin: " << getPluginName() << " from " << path;
+        logger<<oss.str();
+            
+        Init();
+    }
+    return true;
 }
 
 void* tryGetFunction(void* handle,const char* functionName)
@@ -175,4 +226,27 @@ Function_Extern void RegisterSpecialFunction(int index,const char * name,Special
     logger<<std::string(name) + " OK";
 
     } catch(const char * e) {logger.PrintError(e);};
+}
+
+Function_Extern void CallWorker(int index,WorkerType type,const char * argsInOne)
+{
+    switch (type)
+    {
+    case CommandRegister:
+    callWorker_CallBack CW;
+    try
+    {
+        CW = (callWorker_CallBack)tryGetFunction(plugins[index],"CWorker_CallBack");
+        if (terminalRun) CW(CommandRegister,(void*)RegisterCommand);
+        else CW(CommandRegister,(void*)FakeRegisterCommand);
+    }
+    catch(const char * e)
+    {
+        logger.PrintError(e);
+    }
+        break;
+    
+    default:
+        break;
+    }    
 }
