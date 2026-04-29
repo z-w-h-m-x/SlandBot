@@ -49,6 +49,24 @@ bool SLB_MessageProcessorInit()
     return true;
 }
 
+void LetMeTakeABroken(int *ec,bool *slow)
+{
+    if (slow)
+    {
+#ifdef _WIN32
+    Sleep(100);
+#else
+    usleep(100000);
+#endif
+    }
+    else
+    {
+        (*ec)++;
+        if (*ec >= 10000)//万次空循环后进入慢模式
+            *slow = true;
+    }
+}
+
 void SLB_MessageProcessorStop()
 {
     needStop=true;
@@ -149,16 +167,7 @@ Filtered: ;
         }
         else//为空队列
         {
-            if (slow)
-            {
-                Sleep(100);
-            }
-            else
-            {
-                ec++;
-                if (ec >= 10000)//万次空循环后进入慢模式
-                    slow = true;
-            }
+            LetMeTakeABroken(&ec,&slow);
         }
     }
 }
@@ -190,16 +199,7 @@ void SendProcessor()
         }
         else//为空队列
         {
-            if (slow)
-            {
-                Sleep(100);
-            }
-            else
-            {
-                ec++;
-                if (ec >= 10000)//万次空循环后进入慢模式
-                    slow = true;
-            }
+            LetMeTakeABroken(&ec,&slow);
         }
     }
 }

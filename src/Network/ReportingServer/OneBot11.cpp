@@ -11,6 +11,8 @@
 #include "Message/iMessageDefinition.h"
 #include "Processor/MessageQueueProcessor.h"
 
+#include "util.h"
+
 using std::string;
 using std::map;
 using std::chrono::system_clock;
@@ -52,6 +54,7 @@ bool Server_OneBot11::Init()
     svr.Post("/", [this](const httplib::Request& req,httplib::Response& res){
         iMessageContent message;
         json body = json::parse(req.body.c_str());
+        std::stringstream logText;
         res.status = 200;
         if (body["post_type"].is_string())//is json from onebot
         {
@@ -66,6 +69,7 @@ bool Server_OneBot11::Init()
             case 2://message
                 if (body["message_type"].is_string())
                 {   string message_type = body["message_type"];
+                    std::string logtmp;
                     switch (messageTypeMap[message_type])
                     {
                     case 1://private
@@ -86,6 +90,16 @@ bool Server_OneBot11::Init()
                         // }
 
                         MessageArrayProcessor(body["message"],&message,self_id);
+
+                        logText.str("");
+                        logtmp = (message.sendID.messageType != at) ? "" : "(AT)";
+
+                        logText << "收到私聊: " << " <- " << message.sendID.userID << ":" 
+                            << logtmp << message.contentS; 
+
+                        logger << logText.str();
+
+                        message.sendID.messageType = normal;
 
                         ReceiveMessage(message);
 
@@ -122,6 +136,14 @@ bool Server_OneBot11::Init()
                                 message.sendID.subType = group_anonymous;
                             else if (messageTypeMap[body["sub_type"]] == 9953)
                                 message.sendID.subType = group_notice;
+
+                            logText.str("");
+                            logtmp = (message.sendID.messageType != at) ? "" : "(AT)";
+
+                            logText << "收到群聊: " << " <- " << message.sendID.userID << ":" 
+                                << logtmp << message.contentS; 
+
+                            logger << logText.str();
 
                             ReceiveMessage(message);
                         }
@@ -218,7 +240,7 @@ void Server_OneBot11::HeartBeatProcessor()
                 active = false;
         }
 
-        Sleep(1000);
+        slbUtils::Sleep(100);
     }
 }
 

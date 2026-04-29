@@ -67,3 +67,29 @@ bool Napcat::iSendMessage(MessageContent message)
 
     return true;
 }
+
+json Napcat::GetGroupMemberList(long long groupID)
+{
+    json j,body,ref;
+    j["group_id"] = groupID;
+    j["no_cache"] = false; 
+    auto res = clnt.Post("/get_group_member_list",j.dump(),"application/json");
+    body.parse(res->body);
+
+    ref["retcode"] = body["retcode"];
+    if (body["retcode"] == 0 && ref["data"].is_array())
+    {
+        int i = 0;
+        for(auto item : body["data"])
+        {
+            ref["data"][i]["user_id"] = item["user_id"];
+            ref["data"][i]["nickname"] = item["nickname"];
+            ref["data"][i]["card"] = item["card"];
+
+            i++;
+        }
+    }
+    else if (!ref["data"].is_array()) ref["retcode"] = -1;
+
+    return ref;
+}

@@ -8,7 +8,8 @@ Message_Normal=2
 
 enum WorkerType
 {
-    CommandRegister = 1
+    CommandRegister = 1,
+    getAccountInfo = 2
 };
 
 //内部统计使用

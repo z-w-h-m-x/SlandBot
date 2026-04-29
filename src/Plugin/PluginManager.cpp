@@ -230,6 +230,7 @@ Function_Extern void RegisterSpecialFunction(int index,const char * name,Special
 
 Function_Extern void CallWorker(int index,WorkerType type,const char * argsInOne)
 {
+    json j;
     switch (type)
     {
     case CommandRegister:
@@ -244,6 +245,12 @@ Function_Extern void CallWorker(int index,WorkerType type,const char * argsInOne
     {
         logger.PrintError(e);
     }
+        break;
+
+    case getAccountInfo:
+        j.parse(argsInOne);
+        if (j["func"] == "GetGroupList")
+            return (void)client->GetGroupMemberList(j["group"]).dump().c_str(); 
         break;
     
     default:
