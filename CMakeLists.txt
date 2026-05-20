@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.10)
 
-project(SlackBBot VERSION 0.0.1.1)
+project(SlandBot VERSION 0.0.1.2)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./bin/)
@@ -38,10 +38,11 @@ find_package(SDL2 REQUIRED)
 
 add_library(Plugin_DevTest SHARED ${Plugin_DevTest_FILES} include/Plugin/Plugin/Plugin_Base.cpp)
 
-set_target_properties(Plugin_DevTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ./bin/plugin/)
+set_target_properties(Plugin_DevTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ./bin/plugin/
+                        LIBRARY_OUTPUT_DIRECTORY ./bin/plugin/)
 set_target_properties(Plugin_DevTest PROPERTIES PREFIX "")
 
-add_executable(slackbbot
+add_executable(slandbot
     ${SLB_SRC}
     ${SLB_Processor_SRC}
     ${SLB_Plugin_SRC}
@@ -53,7 +54,7 @@ add_executable(slackbbot
     src/Processor/QOE/qoeArg.cpp
 )
 
-target_link_libraries(slackbbot
+target_link_libraries(slandbot
     SDL2::SDL2
     # SDL2_net::SDL2_net
     # requirements of httplib.h when dev with mingw 

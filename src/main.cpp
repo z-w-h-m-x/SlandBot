@@ -54,7 +54,7 @@ int main(int argc,char* argv[])
     }
 
     //获取配置目录
-    perfPath = SDL_GetPrefPath("SlackBBotDev","SlackBBot");
+    perfPath = SDL_GetPrefPath("SlandBotDev","SlandBot");
     programPath = SDL_GetBasePath();
 
     //命令行

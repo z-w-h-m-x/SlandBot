@@ -9,5 +9,5 @@ struct iMessageContent : MessageContent
     std::string contentS;
 };
 
-MessageContent ToMessageContent(iMessageContent);
+MessageContent ToMessageContent(iMessageContent*);
 iMessageContent ToIMessageContent(MessageContent);

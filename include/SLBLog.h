@@ -3,11 +3,12 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <string>
 
 namespace slb
 {
 
-const char * GetCurrentTimeString();
+std::string GetCurrentTimeString();
 
 }
 

@@ -132,7 +132,7 @@ void PendingProcessor()
     for ( ;!needStop; )//不需要停止
     {
         iMessage = GetRMessage();
-        message = ToMessageContent(iMessage);
+        message = ToMessageContent(&iMessage);
         if (!message.isEmpty)
         {
             if (slow)
@@ -181,8 +181,8 @@ void SendProcessor()
     for ( ;!needStop; )//不需要停止
     {
         iMessage = GetSMessage();
-        message = ToMessageContent(iMessage);
-        message.content = iMessage.contentS.c_str();//避免悬空
+        message = ToMessageContent(&iMessage);
+        //message.content = iMessage.contentS.c_str();//避免悬空
         if (!message.isEmpty)
         {
             if (slow)

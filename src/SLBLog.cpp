@@ -3,14 +3,14 @@
 #include <ctime>
 #include <chrono>
 #include <sstream>
-#include <string>
+
 
 using namespace std;
 
 namespace slb
 {
 
-const char * GetCurrentTimeString()
+std::string GetCurrentTimeString()
 {
     using std::chrono::system_clock;
 
@@ -33,7 +33,7 @@ const char * GetCurrentTimeString()
     oss << now_tm->tm_sec << ".";
     oss << std::setw(9) << std::setfill('0') << ns.count();
 
-    return oss.str().c_str();
+    return oss.str();
 
 }
 
