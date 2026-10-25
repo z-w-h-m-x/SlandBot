@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 
 project(SlandBot VERSION 0.0.1.2)
 
+# 导出 compile_commands.json，供 IDE（IntelliSense/clangd）读取正确的
+# include 路径和宏定义（如 CPPHTTPLIB_OPENSSL_SUPPORT）
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./bin/)
 
@@ -36,6 +40,11 @@ aux_source_directory(plugins/dev-test Plugin_DevTest_FILES)
 find_package(SDL2 REQUIRED)
 # find_package(SDL2_net REQUIRED)
 
+# QQ 官方机器人适配器需要 HTTPS(REST) 和 WSS(网关)
+# Official QQ Bot adapter needs HTTPS for REST and WSS for the gateway.
+find_package(OpenSSL REQUIRED)
+add_compile_definitions(CPPHTTPLIB_OPENSSL_SUPPORT)
+
 add_library(Plugin_DevTest SHARED ${Plugin_DevTest_FILES} include/Plugin/Plugin/Plugin_Base.cpp)
 
 set_target_properties(Plugin_DevTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ./bin/plugin/
@@ -56,6 +65,8 @@ add_executable(slandbot
 
 target_link_libraries(slandbot
     SDL2::SDL2
+    OpenSSL::SSL
+    OpenSSL::Crypto
     # SDL2_net::SDL2_net
     # requirements of httplib.h when dev with mingw 
     $<$<BOOL:${MINGW}>:ws2_32>

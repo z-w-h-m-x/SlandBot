@@ -2,6 +2,11 @@
 
 暂时以Onebot11标准作为接口的API请求框架，未来有更多
 
+已支持的接口适配器：
+
+- OneBot11（上报服务器 + NapCat 发送）
+- QQ 官方机器人（QQ 开放平台），用法见 [doc/QQBot.md](./doc/QQBot.md)
+
 注意：项目名缩写为SLB
 
 项目处于早期开发阶段，很多都不完整，但是能用
@@ -56,6 +61,7 @@ include/Plugin/Plugin文件夹中的内容不使用GPLv3协议，使用MIT（对
 
 - cmake
 - SDL2
+- OpenSSL（QQ 官方机器人适配器的 HTTPS/WSS 依赖，参见[适配器文档](./doc/QQBot.md)）
 - [json](https://github.com/nlohmann/json)
 - [cpp-httplib](https://github.com/yhirose/cpp-httplib)
 

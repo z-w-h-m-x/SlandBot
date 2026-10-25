@@ -7,10 +7,10 @@ Plugin_Extern const char * PluginName()
 
 Plugin_Extern void Init()
 {
-    SubmitFunction("Fillter_AfterReceiveMessage");
+    SubmitFunction("Filter_AfterReceiveMessage");
 }
 
-Plugin_Extern bool Fillter_AfterReceiveMessage(MessageContent message)
+Plugin_Extern bool Filter_AfterReceiveMessage(MessageContent message)
 {
     MessageContent tmp = message;
     if (message.sendID.isGroup && message.sendID.messageType == at)

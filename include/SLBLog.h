@@ -123,7 +123,7 @@ public:
     template <typename T>
     SLBLOG_DEBUG& operator<<(T text)
     {
-        if (debugPoint)
+        if (debugPoint && *debugPoint)
             (*logerPoint) << text;
         return *this;
     }
@@ -131,7 +131,7 @@ public:
     template <typename T>
     SLBLOG_DEBUG& operator<(T text)
     {
-        if (debugPoint)
+        if (debugPoint && *debugPoint)
             (*logerPoint) < text;
         return *this;
     }

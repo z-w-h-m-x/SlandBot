@@ -36,6 +36,9 @@
 #include "Plugin/PluginManager.h"
 #include "Network/ReportingServer/OneBot11.h"
 #include "Network/Client/NapCat.h"
+#include "Network/ReportingServer/QQBotGateway.h"
+#include "Network/Client/QQBot.h"
+#include "Network/QQBotCommon.h"
 #include "Processor/MessageQueueProcessor.h"
 #include "Processor/TerminalProcessor.h"
 
@@ -75,15 +78,42 @@ int main(int argc,char* argv[])
     }
 
     Server_OneBot11 OneBot11;
-    server = &OneBot11;
-
-    server->Init();
-    server->Run("0.0.0.0",11451);
-
+    Server_QQBotGateway qqBotGateway;
     Napcat napcatC;
-    client = &napcatC;
+    QQBotClient qqBotC;
 
-    client->Init();
+    //选择接口适配器
+    if (serverConfig.adapter == Data::AdapterType::QQBot)
+    {
+        qqbot::config.appId = serverConfig.qqBotAppId;
+        qqbot::config.clientSecret = serverConfig.qqBotClientSecret;
+        qqbot::config.sandbox = serverConfig.qqBotSandbox;
+
+        server = &qqBotGateway;
+        client = &qqBotC;
+
+        logger << "Adapter: QQBot (QQ official open platform)";
+    }
+    else
+    {
+        server = &OneBot11;
+        client = &napcatC;
+
+        logger << "Adapter: OneBot11 + NapCat";
+    }
+
+    if (!server->Init())
+    {
+        logger.PrintError("Fail to init server adapter");
+        Stop_Error();
+    }
+    server->Run(serverConfig.host.c_str(), serverConfig.port);
+
+    if (!client->Init())
+    {
+        logger.PrintError("Fail to init client adapter");
+        Stop_Error();
+    }
 
     SLB_MessageProcessorInit();
 

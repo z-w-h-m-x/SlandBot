@@ -20,5 +20,7 @@ extern IClient* client;
 extern httplib::Client clnt;
 
 extern bool disableLogSaving;
+extern bool debugMode;
+extern SLBLOG_DEBUG debugLogger;
 
 std::string LetCCtoString(const char *);
