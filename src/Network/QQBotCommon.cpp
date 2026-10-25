@@ -33,6 +33,25 @@ namespace qqbot
             if (secret != nullptr)
                 config.clientSecret = secret;
         }
+
+        // 被动回复限制：平台规则调整时用环境变量覆盖，不必改代码重编
+        auto readPositiveInt = [](const char *name, int fallback)
+        {
+            const char *v = std::getenv(name);
+            if (v == nullptr || *v == '\0')
+                return fallback;
+            int parsed = std::atoi(v);
+            return parsed > 0 ? parsed : fallback;
+        };
+
+        config.groupReplyWindowSeconds = readPositiveInt(
+            "QQ_BOT_GROUP_REPLY_WINDOW", config.groupReplyWindowSeconds);
+        config.privateReplyWindowSeconds = readPositiveInt(
+            "QQ_BOT_PRIVATE_REPLY_WINDOW", config.privateReplyWindowSeconds);
+        config.groupMaxReplyPerMsg = readPositiveInt(
+            "QQ_BOT_GROUP_MAX_REPLY", config.groupMaxReplyPerMsg);
+        config.privateMaxReplyPerMsg = readPositiveInt(
+            "QQ_BOT_PRIVATE_MAX_REPLY", config.privateMaxReplyPerMsg);
     }
 
     bool IsConfigured()
@@ -250,19 +269,36 @@ namespace qqbot
         std::mutex replyMutex;
         std::map<long long, PendingReply> pendingReplies;
 
-        // 官方被动回复窗口 5 分钟，同一 msg_id 最多回 5 次
-        const int kReplyWindowSeconds = 300;
-        const int kMaxReplyPerMsg = 5;
+        // 被动回复限制来自 AdapterConfig（默认值按官方文档，可用环境变量覆盖）：
+        //   单聊 60 分钟 / 同一 msg_id 最多 4 次
+        //   群聊 5 分钟 / 同一 msg_id 最多 5 次
+        int ReplyWindowSeconds(bool isGroup)
+        {
+            return isGroup ? config.groupReplyWindowSeconds : config.privateReplyWindowSeconds;
+        }
+
+        int MaxReplyPerMsg(bool isGroup)
+        {
+            return isGroup ? config.groupMaxReplyPerMsg : config.privateMaxReplyPerMsg;
+        }
+
+        // 群和私聊的 ID 空间可能撞车，私聊存负值用于区分
+        long long ReplyKey(long long target, bool isGroup)
+        {
+            return isGroup ? target : -target;
+        }
 
         void PruneExpiredReplies()
         {
             auto now = std::chrono::steady_clock::now();
             for (auto it = pendingReplies.begin(); it != pendingReplies.end();)
             {
+                // key 为正代表群聊，为负代表单聊
+                bool isGroup = it->first > 0;
                 auto age = std::chrono::duration_cast<std::chrono::seconds>(
                                now - it->second.receivedAt)
                                .count();
-                if (age > kReplyWindowSeconds)
+                if (age > ReplyWindowSeconds(isGroup))
                     it = pendingReplies.erase(it);
                 else
                     ++it;
@@ -276,8 +312,7 @@ namespace qqbot
             return;
 
         std::lock_guard<std::mutex> lock(replyMutex);
-        // 群和私聊的 ID 空间可能撞车，这里用符号区分（私聊存负值）
-        long long key = isGroup ? target : -target;
+        long long key = ReplyKey(target, isGroup);
 
         PendingReply reply;
         reply.msgId = msgId;
@@ -296,12 +331,12 @@ namespace qqbot
         std::lock_guard<std::mutex> lock(replyMutex);
         PruneExpiredReplies();
 
-        long long key = isGroup ? target : -target;
+        long long key = ReplyKey(target, isGroup);
         auto hit = pendingReplies.find(key);
         if (hit == pendingReplies.end())
             return false;
 
-        if (hit->second.usedCount >= kMaxReplyPerMsg)
+        if (hit->second.usedCount >= MaxReplyPerMsg(isGroup))
             return false;
 
         hit->second.usedCount++;

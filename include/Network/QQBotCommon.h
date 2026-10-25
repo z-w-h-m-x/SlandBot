@@ -23,6 +23,14 @@ namespace qqbot
         // GROUP_AND_C2C_EVENT = 1 << 25，群聊/单聊消息只需要这个
         unsigned int intents = 1u << 25;
         bool sandbox = false;
+
+        // 被动回复窗口（官方默认值；平台规则调整时可用环境变量覆盖，不用改代码）
+        // 群聊：5 分钟 / 同一 msg_id 最多 5 次
+        // 单聊：60 分钟 / 同一 msg_id 最多 4 次
+        int groupReplyWindowSeconds = 300;
+        int privateReplyWindowSeconds = 3600;
+        int groupMaxReplyPerMsg = 5;
+        int privateMaxReplyPerMsg = 4;
     };
 
     extern AdapterConfig config;
@@ -50,8 +58,8 @@ namespace qqbot
     std::string GetAccessToken(bool forceRefresh = false);
     void InvalidateAccessToken();
 
-    // 被动回复窗口：记下最近一条收到的消息 msg_id。
-    // 官方对主动推送有额度限制，回复时带上 msg_id 才算被动消息。
+    // 被动回复窗口：记下最近一条收到的消息 msg_id，回复时带上才算被动消息。
+    // 官方规则：单聊 60 分钟 / 最多 4 次，群聊 5 分钟 / 最多 5 次。
     void RememberMsgId(long long target, bool isGroup, const std::string &msgId);
     // 取出可用的 msg_id 并推进 msg_seq；窗口过期或次数用尽返回 false
     bool TakeMsgId(long long target, bool isGroup, std::string &msgId, int &msgSeq);
