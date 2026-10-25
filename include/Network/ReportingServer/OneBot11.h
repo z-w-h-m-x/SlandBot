@@ -6,6 +6,8 @@
 #include <chrono>
 #include <mutex>
 
+#include "httplib.h"
+
 class Server_OneBot11 : public IServer 
 {
     private:
@@ -16,8 +18,12 @@ class Server_OneBot11 : public IServer
         std::mutex mutex_Beat;
         u_int count = 0;
     protected:
+        httplib::Server svr;
+        std::thread svr_thread;
 
     public:
+        bool Run(const char * host,int port) override;
+        bool Stop() override;
         bool Init() override;
         bool Active() override;
         void AfterStop() override;

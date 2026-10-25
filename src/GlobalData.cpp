@@ -11,6 +11,9 @@ IClient* client;
 httplib::Client clnt("127.0.0.1");
 
 bool disableLogSaving = false;
+bool debugMode = false;
+
+SLBLOG_DEBUG debugLogger(&logger,&debugMode);
 
 std::string LetCCtoString(const char * c)
 {

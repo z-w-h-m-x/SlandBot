@@ -17,6 +17,7 @@ class SLBLog
 private:
     bool isOpenFile=false;
     std::ofstream logFile;
+    std::string lastTime;
 public:
 
     int mode = 0;
@@ -35,33 +36,48 @@ public:
     template <typename T>
     void PrintMessage(T text)
     {
+        lastTime = slb::GetCurrentTimeString();
         if (mode == 0 || mode == 2)
-            std::cout << "["<<slb::GetCurrentTimeString()<<"]" << '\t' << text << std::endl;
+            std::cout << "["<<lastTime<<"]" << '\t' << text << std::endl;
         if (isOpenFile && (int)mode < 2)
         {
-            logFile << "["<<slb::GetCurrentTimeString()<<"]" << "\t" << text << std::endl;
+            logFile << "["<<lastTime<<"]" << "\t" << text << std::endl;
+        }
+    }
+
+    template <typename T>
+    void PrintMessageNL(T text)
+    {
+        lastTime = slb::GetCurrentTimeString();
+        if (mode == 0 || mode == 2)
+            std::cout << "["<<lastTime<<"]" << '\t' << text ;
+        if (isOpenFile && (int)mode < 2)
+        {
+            logFile << "["<<lastTime<<"]" << "\t" << text ;
         }
     }
 
     template <typename T>
     void PrintError(T text)
     {
+        lastTime = slb::GetCurrentTimeString();
         if (mode == 0 || mode == 2)
-            std::cout << "["<<slb::GetCurrentTimeString()<<"]" << "\tERROR\t" << text << std::endl;
+            std::cout << "["<<lastTime<<"]" << "\tERROR\t" << text << std::endl;
         if (isOpenFile && (int)mode < 2)
         {
-            logFile << "["<<slb::GetCurrentTimeString()<<"]" << "\tERROR\t" << text << std::endl;
+            logFile << "["<<lastTime<<"]" << "\tERROR\t" << text << std::endl;
         }
     }
 
     template <typename T>
     void PrintError(T text, T ERROR_CODE)
     {
+        lastTime = slb::GetCurrentTimeString();
         if (mode == 0 || mode == 2)
-            std::cout << "["<<slb::GetCurrentTimeString()<<"]" << "\tERROR\t" << text << "\t ERRORCODE:" << ERROR_CODE << std::endl;
+            std::cout << "["<<lastTime<<"]" << "\tERROR\t" << text << "\t ERRORCODE:" << ERROR_CODE << std::endl;
         if (isOpenFile && mode < 2)
         {
-            logFile << "["<<slb::GetCurrentTimeString()<<"]" << text << "\t ERRORCODE:" << ERROR_CODE << std::endl;
+            logFile << "["<<lastTime<<"]" << text << "\t ERRORCODE:" << ERROR_CODE << std::endl;
         }
     }
 
@@ -83,10 +99,46 @@ public:
     }
 
     template <typename T>
-    SLBLog* operator<<(T text)
+    SLBLog& operator<<(T text)
     {
         PrintMessage(text);
-        return this;
+        return *this;
     }
 
+    template <typename T>
+    SLBLog& operator<(T text)
+    {
+        PrintMessageNL(text);
+        return *this;
+    }
+
+};
+
+class SLBLOG_DEBUG
+{
+public:
+    SLBLog *logerPoint;
+    bool *debugPoint;
+
+    template <typename T>
+    SLBLOG_DEBUG& operator<<(T text)
+    {
+        if (debugPoint)
+            (*logerPoint) << text;
+        return *this;
+    }
+
+    template <typename T>
+    SLBLOG_DEBUG& operator<(T text)
+    {
+        if (debugPoint)
+            (*logerPoint) < text;
+        return *this;
+    }
+
+    SLBLOG_DEBUG(SLBLog *lp,bool *dp)
+    {
+        logerPoint = lp;
+        debugPoint = dp;
+    }
 };

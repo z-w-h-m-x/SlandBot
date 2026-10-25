@@ -11,6 +11,8 @@
 #include "Message/iMessageDefinition.h"
 #include "Processor/MessageQueueProcessor.h"
 
+#include "Processor/ProgramStop.h"
+
 #include "util.h"
 
 using std::string;
@@ -43,6 +45,42 @@ map<string,int> noticeTypeMap = //sub type(99xx)
 };
 
 void MessageArrayProcessor(json,iMessageContent*,long long);
+
+bool Server_OneBot11::Run(const char * host,int port)
+{
+    try
+    {
+        {
+            std::thread temp( [this,host,port](){svr.listen(host,port);} );
+            svr_thread.swap(temp);
+        }
+        isRun = true;
+    }
+    catch(const std::exception& e)
+    {
+        logger << "catch error in running server";
+        logger.Print( e.what() );
+        Stop_Error();
+    }
+
+    return true;
+
+}
+
+bool Server_OneBot11::Stop()
+{
+
+    AfterStop();
+
+    svr.stop();
+
+    if (svr_thread.joinable())
+    {
+        svr_thread.join();
+    }
+
+    return true;
+}
 
 bool Server_OneBot11::Init()
 {

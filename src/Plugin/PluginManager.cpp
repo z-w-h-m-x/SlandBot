@@ -18,8 +18,9 @@ using std::filesystem::directory_iterator;
 std::vector<std::string> targetPath;//Dynamic library in folder of plugins.
 std::map<std::string,std::string> pluginPath;//<name,path>
 std::map<int,void*> plugins;//plugin index, handle
+std::map<int,void(*)()> pluginsStop;//plugin index, handle
 
-std::mutex mutex_LoadPlugin;
+std::mutex mutex_ProcessPlugin;
 
 typedef const char * (*iPluginName)();
 typedef void (*iRF)(int,const char *);
@@ -28,7 +29,7 @@ typedef void (*iSM)(MessageContent);
 typedef void (*iCW)(int, WorkerType, const char * );
 
 typedef void (*iInit)(int,iRF,iRSF,iSM,iCW);
-typedef void (*pInit)();
+typedef void (*pInit)(); typedef pInit pStop;
 
 typedef void (*callWorker_CallBack)(WorkerType,void*);
 
@@ -54,95 +55,86 @@ void SearchPluginInFolder()
 //尝试加载目录下所有插件
 bool LoadAllPlugin()
 {
-    std::unique_lock<std::mutex> lock(mutex_LoadPlugin);
     logger<<"Search Plugin...";
 
     SearchPluginInFolder();
 
-    int index = plugins.size();
-
     for (std::string i : targetPath)
     {
-        void* handle = SDL_LoadObject(i.c_str());
-        iPluginName getPluginName;
-        iInit iiInit;
-        pInit Init;
-
-        if (handle == nullptr) {
-            logger.PrintError("Fail to load object: " + i);
-            SDL_UnloadObject(handle);
-        }
-        else {
-            try
-            {
-                getPluginName = (iPluginName)tryGetFunction(handle,"PluginName");
-                iiInit = (iInit)tryGetFunction(handle,"iInit");
-                Init = (pInit)tryGetFunction(handle,"Init");
-            }
-            catch(const char * e)
-            {
-                SDL_UnloadObject(handle);
-                logger.PrintError(e);
-                continue;
-            }
-
-            plugins[index] = handle;
-            pluginPath[getPluginName()] = i;
-            iiInit(index,RegisterFunction,RegisterSpecialFunction,SLB_SendMessage,CallWorker);
-
-            std::ostringstream oss;
-            oss <<"Load Plugin: " << getPluginName() << " from " << i;
-            logger<<oss.str();
-
-            Init();
-
-            index++;
-        }
-        
+        LoadPlugin(i.c_str());
     }
 
     return true;
 }
 
-//尝试加载单个插件dll
+//尝试加载单个插件
 bool LoadPlugin(const char * path)
 {
-    std::unique_lock<std::mutex> lock(mutex_LoadPlugin);
+    std::unique_lock<std::mutex> lock(mutex_ProcessPlugin);
 
     void* handle = SDL_LoadObject(path);
     iPluginName getPluginName;
     iInit iiInit;
     pInit Init;
     int index = plugins.size();
+
+    pStop pstop;
     
     if (handle == nullptr) {
         logger.PrintError("Fail to load object: " + std::string(path));
         SDL_UnloadObject(handle);
     }
     else {
-    try
-    {
-        getPluginName = (iPluginName)tryGetFunction(handle,"PluginName");
-        iiInit = (iInit)tryGetFunction(handle,"iInit");
-        Init = (pInit)tryGetFunction(handle,"Init");
-    }
-    catch(const char * e)
-    {
-        SDL_UnloadObject(handle);
-        logger.PrintError(e);
-    }
-    
+        try
+        {
+            getPluginName = (iPluginName)tryGetFunction(handle,"PluginName");
+            iiInit = (iInit)tryGetFunction(handle,"iInit");
+            Init = (pInit)tryGetFunction(handle,"Init");
+        }
+        catch(const char * e)
+        {
+            SDL_UnloadObject(handle);
+            logger.PrintError(e);
+            return false;
+        }
+
+        
+        try
+        {
+            pstop = (pStop)tryGetFunction(handle,"PluginStop");
+            pluginsStop[index] = pstop;
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+        catch(const char * e)
+        {
+            logger < path < " dont have a STOP function\n";
+        }
+
         plugins[index] = handle;
         pluginPath[getPluginName()] = path;
         iiInit(index,RegisterFunction,RegisterSpecialFunction,SLB_SendMessage,CallWorker);
-    
+
         std::ostringstream oss;
         oss <<"Load Plugin: " << getPluginName() << " from " << path;
         logger<<oss.str();
-            
+
         Init();
     }
     return true;
+}
+
+void StopPlugin(int index)
+{
+
+}
+
+void StopAllPlugin()
+{
+
 }
 
 void* tryGetFunction(void* handle,const char* functionName)

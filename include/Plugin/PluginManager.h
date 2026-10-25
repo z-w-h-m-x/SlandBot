@@ -19,6 +19,9 @@ bool LoadAllPlugin();
 //尝试加载单个插件dll
 bool LoadPlugin(const char *);
 
+void StopPlugin(int index);
+void StopAllPlugin();
+
 void* tryGetFunction(void*,const char*);
 
 //由插件init过程调用
